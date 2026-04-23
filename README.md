@@ -3,7 +3,7 @@
 Inspired by Tensia อุ๊อิอา
 Vibecoded via Google Gemini Pro
 
-Play the game live here: [Insert your GitHub Pages Link Here]
+Play the game live here: [https://scambodia.github.io/IsekaiHepatocyte/](https://scambodia.github.io/IsekaiHepatocyte/)
 
 📖 Description
 
