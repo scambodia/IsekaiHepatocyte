@@ -42,17 +42,3 @@ Frontend: HTML5, CSS3 (Custom properties, Flexbox/Grid layouts, CSS Animations)
 Logic: Vanilla JavaScript (ES6)
 
 Architecture: Fully static, single-file application. No backend or database required.
-
-🚀 Deployment (GitHub Pages)
-
-This game is designed to be easily hosted on GitHub Pages:
-
-Upload index.html to the root of your repository.
-
-Go to your repository Settings -> Pages.
-
-Under "Build and deployment", set the source to Deploy from a branch.
-
-Select the main (or master) branch and save.
-
-GitHub will generate a live URL for your game within a few minutes!
