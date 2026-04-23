@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Isekai Hepatocyte: The Survival</title>
+    <style>
+        :root {
+            --bg-color: #1a0f14;
+            --panel-bg: rgba(255, 255, 255, 0.05);
+            --text-main: #f0e6e6;
+            --atp-color: #00e5ff;
+            --tox-color: #ff3366;
+            --mut-color: #b000ff;
+            --hh-color: #00ff66;
+            --immune-color: #ffaa00;
+            --cell-healthy: #ff6699;
+            --cell-fat: #e6b800;
+            --cell-fibrosis: #8b5a2b;
+            --cell-cancer: #2a0033;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .game-container {
+            width: 900px;
+            height: 600px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            background: #2a1b24;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            position: relative;
+        }
+
+        /* --- Left Panel: Visuals --- */
+        .visual-panel {
+            background: var(--panel-bg);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            transition: background 1s ease;
+        }
+
+        .phase-display {
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-align: center;
+            color: #ffcc00;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            z-index: 2;
+        }
+
+        .tensura-text {
+            font-size: 0.85rem;
+            color: #00e5ff;
+            font-style: italic;
+            text-align: center;
+            opacity: 0.8;
+            margin-bottom: 10px;
+            text-shadow: 0 0 5px rgba(0, 229, 255, 0.4);
+            height: 20px;
+        }
+
+        /* Normal Cell */
+        .cell-entity {
+            width: 150px;
+            height: 150px;
+            border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+            background: var(--cell-healthy);
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.5), 0 0 20px var(--cell-healthy);
+            animation: breathe 3s infinite ease-in-out;
+            transition: all 1s ease;
+            position: relative;
+            z-index: 2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3rem;
+        }
+
+        .nucleus {
+            width: 50px;
+            height: 50px;
+            background: rgba(100, 0, 100, 0.6);
+            border-radius: 50%;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+            transition: all 1s ease;
+        }
+
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
+            50% { transform: scale(1.05); border-radius: 60% 40% 30% 70% / 50% 60% 40% 60%; }
+        }
+
+        /* Cancer Cell Styles */
+        .cell-cancer {
+            background: var(--cell-cancer) !important;
+            box-shadow: inset 0 0 30px #000, 0 0 30px #ff00ff !important;
+            animation: pulse-cancer 1.5s infinite ease-in-out !important;
+        }
+        .nucleus-cancer {
+            background: #ff0033 !important;
+            border-radius: 20% 80% 30% 70% !important;
+            transform: scale(1.2);
+        }
+
+        @keyframes pulse-cancer {
+            0%, 100% { border-radius: 20% 80% 30% 70% / 70% 30% 80% 20%; transform: scale(1); }
+            50% { border-radius: 80% 20% 70% 30% / 30% 70% 20% 80%; transform: scale(1.15) rotate(15deg); }
+        }
+
+        /* --- Right Panel: Stats & Controls --- */
+        .control-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            height: 100%;
+            overflow: hidden; /* Fixes sliding bug */
+        }
+
+        .settings-panel {
+            background: #111;
+            padding: 8px 10px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            border: 1px solid #333;
+        }
+
+        .settings-panel select {
+            background: #2a1b24;
+            color: #fff;
+            border: 1px solid #5a394f;
+            border-radius: 4px;
+            padding: 3px;
+            cursor: pointer;
+        }
+
+        .stat-box { margin-bottom: 5px; }
+        .stat-label { display: flex; justify-content: space-between; margin-bottom: 3px; font-weight: bold; font-size: 0.9rem;}
+        
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: #111;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.8);
+        }
+
+        .progress-fill {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        #atp-fill { background: var(--atp-color); box-shadow: 0 0 10px var(--atp-color); }
+        #tox-fill { background: var(--tox-color); box-shadow: 0 0 10px var(--tox-color); }
+        #mut-fill { background: var(--mut-color); box-shadow: 0 0 10px var(--mut-color); }
+        #hh-fill { background: var(--hh-color); box-shadow: 0 0 10px var(--hh-color); }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        button {
+            background: #3d2635;
+            color: white;
+            border: 1px solid #5a394f;
+            padding: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+
+        button:hover:not(:disabled) {
+            background: #5a394f;
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #222;
+            border-color: #333;
+            transform: none;
+        }
+
+        .btn-ultimate {
+            grid-column: span 2;
+            background: linear-gradient(45deg, #ff00cc, #333399);
+            border: none;
+            font-size: 1rem;
+            animation: pulse-ult 1.5s infinite;
+            display: none; 
+            padding: 12px;
+        }
+
+        @keyframes pulse-ult {
+            0% { box-shadow: 0 0 0 0 rgba(255, 0, 204, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(255, 0, 204, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 0, 204, 0); }
+        }
+
+        /* --- Event Log --- */
+        .event-log {
+            flex-grow: 1;
+            background: #111;
+            border-radius: 8px;
+            padding: 10px;
+            overflow-y: auto;
+            min-height: 0; /* Critical flexbox fix */
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.8rem;
+            border: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .log-entry { margin: 0; padding-bottom: 5px; border-bottom: 1px dashed #333; line-height: 1.4; }
+        .log-bad { color: #ff6666; }
+        .log-good { color: #66ff66; }
+        .log-warn { color: #ffcc00; }
+
+        /* --- Modals --- */
+        .modal-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex; /* Displayed by default for tutorial */
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            border-radius: 15px;
+        }
+
+        .modal-content {
+            background: #2a1b24;
+            padding: 30px;
+            border-radius: 10px;
+            border: 2px solid #5a394f;
+            text-align: center;
+            max-width: 500px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        }
+
+        .modal-content h1 { font-size: 1.8rem; margin-top: 0; margin-bottom: 15px; }
+        .modal-content p { font-size: 1rem; line-height: 1.6; color: #ddd; margin-bottom: 15px; text-align: left; }
+        .modal-content ul { text-align: left; margin-bottom: 25px; line-height: 1.6; color: #ddd; font-size: 0.95rem; }
+        .modal-content button { font-size: 1.1rem; padding: 12px 30px; background: #00e5ff; color: #000; border: none; font-weight: 900;}
+        .modal-content button:hover { background: #00b3cc; }
+
+        .hidden { display: none !important; }
+
+        .title-win { color: #b000ff; text-shadow: 0 0 10px #b000ff; }
+        .title-lose { color: #ff3366; text-shadow: 0 0 10px #ff3366; }
+
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    
+    <!-- Tutorial Modal (Shows on load) -->
+    <div class="modal-overlay" id="tutorial-modal">
+        <div class="modal-content">
+            <h1 style="color: #ffcc00;">Isekai Hepatocyte</h1>
+            <p>คุณเกิดใหม่เป็นเซลล์ตับในร่างที่โฮสต์ใช้ชีวิตได้แย่มาก! เป้าหมายของคุณคือเอาชีวิตรอดจากการอักเสบและสะสมค่า Mutation เพื่อหลบหนีออกจากตับนี้</p>
+            <ul>
+                <li>⚡ <b>ATP (Energy):</b> พลังงานสำหรับใช้สกิล</li>
+                <li>☠️ <b>Toxicity:</b> ค่าความเครียดของเซลล์ <b>ถ้าเต็ม 100 คือตาย!</b></li>
+                <li>🧬 <b>Mutation:</b> <b>สะสมให้ถึง 100% เพื่อหลบหนี!</b></li>
+            </ul>
+            <p style="text-align: center; font-size: 0.9rem; color: #888;">Manage your resources carefully. The host's lifestyle will attack you randomly.</p>
+            <button onclick="startGame()">Start Game</button>
+        </div>
+    </div>
+
+    <!-- Universal Alert Modal (Used for both Win & Lose) -->
+    <div class="modal-overlay hidden" id="alert-modal">
+        <div class="modal-content" id="alert-content">
+            <h1 id="alert-title">TITLE</h1>
+            <p id="alert-desc" style="text-align: center;">Description goes here.</p>
+            <button id="alert-btn">Action Button</button>
+        </div>
+    </div>
+
+    <!-- Left Panel -->
+    <div class="visual-panel" id="visual-panel">
+        <div class="phase-display" id="phase-text">Phase 1: Steatosis</div>
+        <div class="tensura-text" id="sage-text">«Notice. Unique Skill [Hepatocyte] acquired.»</div>
+        <div class="cell-entity" id="player-cell">
+            <div class="nucleus"></div>
+        </div>
+        <div style="text-align: center; font-size: 0.9rem; color: #aaa; z-index: 2;" id="flavor-text">
+            "ขยับไม่ได้... ชีวเคมีก็ลืมหมดแล้ว!"<br>
+            Time Survived: <span id="timer">0</span>s
+        </div>
+    </div>
+
+    <!-- Right Panel -->
+    <div class="control-panel">
+        <div class="settings-panel">
+            <label>Difficulty: 
+                <select id="difficulty-select" onchange="updateSettings()">
+                    <option value="0.5">Easy</option>
+                    <option value="1" selected>Normal</option>
+                    <option value="1.5">Hard</option>
+                </select>
+            </label>
+            <label>ATP Regen: 
+                <select id="atp-regen-select" onchange="updateSettings()">
+                    <option value="10">Fast (+10/s)</option>
+                    <option value="5" selected>Normal (+5/s)</option>
+                    <option value="2">Slow (+2/s)</option>
+                </select>
+            </label>
+        </div>
+
+        <div class="stats">
+            <div class="stat-box">
+                <div class="stat-label"><span>⚡ ATP (Energy)</span> <span id="atp-text">100/100</span></div>
+                <div class="progress-bar"><div class="progress-fill" id="atp-fill" style="width: 100%;"></div></div>
+            </div>
+            
+            <div class="stat-box hidden" id="stat-hosthealth">
+                <div class="stat-label"><span>❤️ Host Health (Keep > 0)</span> <span id="hh-text">100/100</span></div>
+                <div class="progress-bar"><div class="progress-fill" id="hh-fill" style="width: 100%;"></div></div>
+            </div>
+
+            <div class="stat-box">
+                <div class="stat-label"><span id="lbl-tox">☠️ Toxicity (Stress)</span> <span id="tox-text">0/100</span></div>
+                <div class="progress-bar"><div class="progress-fill" id="tox-fill" style="width: 0%;"></div></div>
+            </div>
+            
+            <div class="stat-box">
+                <div class="stat-label"><span id="lbl-mut">🧬 Mutation (Win)</span> <span id="mut-text">0%</span></div>
+                <div class="progress-bar"><div class="progress-fill" id="mut-fill" style="width: 0%;"></div></div>
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button id="btn-1" onclick="action1()">🍔 Metabolize Fat<br>(-15 ATP, -10 Tox)</button>
+            <button id="btn-2" onclick="action2()">🍺 Process Alcohol<br>(-20 ATP, -15 Tox)</button>
+            <button id="btn-3" onclick="action3()">🛡️ Fortify Shield<br>(-30 ATP, lasts 5s)</button>
+            <button id="btn-4" onclick="action4()">☢️ Force Mutation<br>(-40 ATP, +10% Mut)</button>
+            <button id="btn-ult" class="btn-ultimate" onclick="triggerUlt()">🚀 [ULTIMATE] EMT Escape!</button>
+        </div>
+
+        <div class="event-log" id="event-log">
+            <!-- Logs will appear here -->
+        </div>
+    </div>
+</div>
+
+<script>
+    // Game State
+    let state = {
+        stage: 1, // 1 = Survival, 2 = Cancer Spread
+        atp: 100,
+        tox: 0,
+        mut: 0,
+        hostHealth: 100,
+        immune: 0,
+        spread: 0,
+        time: 0,
+        phase: 1,
+        shieldActive: false,
+        isGameOver: false,
+        isRunning: false
+    };
+
+    let tickInterval;
+    let eventInterval;
+    let difficultyMultiplier = 1;
+    let atpRegenRate = 5;
+
+    // DOM Elements
+    const els = {
+        atpFill: document.getElementById('atp-fill'), atpText: document.getElementById('atp-text'),
+        toxFill: document.getElementById('tox-fill'), toxText: document.getElementById('tox-text'),
+        mutFill: document.getElementById('mut-fill'), mutText: document.getElementById('mut-text'),
+        hhFill: document.getElementById('hh-fill'), hhText: document.getElementById('hh-text'),
+        
+        lblTox: document.getElementById('lbl-tox'), lblMut: document.getElementById('lbl-mut'),
+        statHH: document.getElementById('stat-hosthealth'),
+        
+        btn1: document.getElementById('btn-1'), btn2: document.getElementById('btn-2'),
+        btn3: document.getElementById('btn-3'), btn4: document.getElementById('btn-4'),
+        btnUlt: document.getElementById('btn-ult'),
+        
+        cell: document.getElementById('player-cell'),
+        phaseText: document.getElementById('phase-text'),
+        sageText: document.getElementById('sage-text'),
+        flavorText: document.getElementById('flavor-text'),
+        timer: document.getElementById('timer'),
+        log: document.getElementById('event-log'),
+        
+        tutorialModal: document.getElementById('tutorial-modal'),
+        alertModal: document.getElementById('alert-modal'),
+        alertTitle: document.getElementById('alert-title'),
+        alertDesc: document.getElementById('alert-desc'),
+        alertBtn: document.getElementById('alert-btn'),
+        visualPanel: document.getElementById('visual-panel')
+    };
+
+    // --- EVENT POOLS ---
+    const eventsStage1 = {
+        1: [
+            { msg: "โฮสต์ซัดหมูกระทะเยียวยาจิตใจกลางดึก! ก้อนไขมันเบียดเซลล์!", tox: 15, type: 'bad' },
+            { msg: "โฮสต์ดื่มชานมไข่มุกหวาน 120%! น้ำตาลทะลักเข้าเซลล์ตับ!", tox: 10, type: 'bad' },
+            { msg: "โฮสต์นอนพักผ่อน. เซลล์ได้พักหายใจชั่วคราว...", atp: 20, tox: -5, type: 'good' }
+        ],
+        2: [
+            { msg: "โฮสต์อกหัก กระดกเหล้าเพียว! แอลกอฮอล์โจมตีรุนแรงระดับเซลล์!", tox: 25, type: 'bad' },
+            { msg: "🚨 ทหารเม็ดเลือดขาวตรวจพบการอักเสบ ปล่อย Cytokine โจมตี!", tox: 20, type: 'warn' },
+            { msg: "โฮสต์กินยาพาราเซตามอลเกินขนาด! ตับทำงานหนักมาก!", tox: 30, type: 'bad' }
+        ],
+        3: [
+            { msg: "🔥 พังผืดรัดตัวรุนแรง! ออกซิเจนลดลง (Hypoxia) หายใจไม่ออก!", tox: 25, atp: -20, type: 'warn' },
+            { msg: "⚔️ สมรภูมิเดือด! เม็ดเลือดขาวบุกทะลวงทำลายเนื้อเยื่อข้างเคียง!", tox: 35, type: 'warn' },
+            { msg: "โฮสต์อาการโคม่า... โอกาสรอดริบหรี่ ต้องรีบกลายพันธุ์หนี!", mut: 5, tox: 10, type: 'warn' }
+        ]
+    };
+
+    const secretEvents = [
+        { msg: "🌟 โฮสต์ซอยจุ๊เนื้อดิบรอบดึก! พยาธิเดินหลงทางผ่านหน้าเซลล์คุณไป! ยี้!", tox: 15, atp: -10, type: 'bad' },
+        { msg: "🌟 โฮสต์เปิดเพลงหมอลำเต้นหน้าฮ้านอย่างเมามันส์! เลือดสูบฉีดเต็มที่!", atp: 50, type: 'good' },
+        { msg: "🌟 ปาฏิหาริย์! โฮสต์ดื่มน้ำเปล่า 2 ลิตรและกินผัก! น้ำตาจะไหล...", tox: -30, atp: 30, type: 'good' },
+        { msg: "🌟 โฮสต์ถูกหวยกิน ซัดเบียร์ย้อมใจ 3 ขวดรวดใน 5 นาที! ตับกรีดร้อง!", tox: 40, type: 'bad' },
+        { msg: "🌟 โฮสต์เผลอหลับข้ามวัน ไม่กินอะไรเลย... เซลล์หิวแต่วางใจได้พัก", tox: -10, atp: 15, type: 'good' }
+    ];
+
+    const eventsStage2 = [
+        { msg: "💉 โฮสต์รับการทำเคมีบำบัด (Chemo)! เซลล์มะเร็งและร่างกายเสียหายหนัก!", immune: -20, hostHealth: -15, spread: -5, type: 'bad' },
+        { msg: "🥦 โฮสต์เริ่มกินอาหารคลีนและนั่งสมาธิ! ภูมิคุ้มกันตื่นตัว!", immune: 20, hostHealth: 10, type: 'warn' },
+        { msg: "🚬 โฮสต์เครียดจัด แอบไปสูบบุหรี่! ร่างกายอ่อนแอลง ภูมิคุ้มกันตก!", immune: -15, hostHealth: -10, type: 'good' },
+        { msg: "🩸 ค้นพบเส้นเลือดใหญ่ (Metastatic pathway)! การแพร่กระจายก้าวกระโดด!", spread: 10, type: 'good' },
+        { msg: "💊 โฮสต์กินยาสมุนไพรเถื่อนรักษามะเร็ง! ไตพัง ร่างกายทรุดโทรมจัด!", hostHealth: -20, type: 'warn' }
+    ];
+
+    // Logging function
+    function addLog(message, type = 'normal') {
+        const entry = document.createElement('div');
+        entry.className = `log-entry log-${type}`;
+        entry.innerText = `[${state.time}s] ${message}`;
+        els.log.prepend(entry);
+    }
+
+    // Modal Control
+    function showModal(title, desc, btnText, btnAction, isWin) {
+        els.alertTitle.innerText = title;
+        els.alertTitle.className = isWin ? 'title-win' : 'title-lose';
+        els.alertDesc.innerHTML = desc;
+        els.alertBtn.innerText = btnText;
+        els.alertBtn.onclick = btnAction;
+        els.alertModal.classList.remove('hidden');
+    }
+
+    // Settings Update
+    function updateSettings() {
+        difficultyMultiplier = parseFloat(document.getElementById('difficulty-select').value);
+        atpRegenRate = parseInt(document.getElementById('atp-regen-select').value);
+        addLog("«Great Sage: Notice. Game settings altered.»", "good");
+    }
+
+    // --- CORE LOOP & UI ---
+    function updateUI() {
+        if (!state.isRunning) return;
+
+        // Clamp values
+        state.atp = Math.max(0, Math.min(100, state.atp));
+        els.atpFill.style.width = `${state.atp}%`;
+        els.atpText.innerText = `${Math.floor(state.atp)}/100`;
+        els.timer.innerText = state.time;
+
+        if (state.stage === 1) {
+            state.tox = Math.max(0, Math.min(100, state.tox));
+            state.mut = Math.max(0, Math.min(100, state.mut));
+            
+            els.toxFill.style.width = `${state.tox}%`;
+            els.toxText.innerText = `${Math.floor(state.tox)}/100`;
+            
+            els.mutFill.style.width = `${state.mut}%`;
+            els.mutText.innerText = `${Math.floor(state.mut)}%`;
+
+            els.btn1.disabled = state.atp < 15;
+            els.btn2.disabled = state.atp < 20;
+            els.btn3.disabled = state.atp < 30;
+            els.btn4.disabled = state.atp < 40;
+
+            // Visuals
+            if (state.tox > 70) {
+                els.cell.style.background = 'var(--cell-fibrosis)';
+                els.cell.style.boxShadow = 'inset 0 0 30px rgba(0,0,0,0.8), 0 0 20px var(--cell-fibrosis)';
+            } else if (state.tox > 40) {
+                els.cell.style.background = 'var(--cell-fat)';
+                els.cell.style.boxShadow = 'inset 0 0 30px rgba(0,0,0,0.5), 0 0 20px var(--cell-fat)';
+            } else {
+                els.cell.style.background = 'var(--cell-healthy)';
+                els.cell.style.boxShadow = 'inset 0 0 30px rgba(0,0,0,0.5), 0 0 20px var(--cell-healthy)';
+            }
+
+            if (state.mut >= 100) {
+                els.btnUlt.style.display = 'block';
+                if(els.btnUlt.style.display !== 'block') addLog("!! ปลดล็อกสกิลขั้นสุดยอด (EMT) !! หนีเดี๋ยวนี้!", "good");
+            }
+
+        } else if (state.stage === 2) {
+            state.immune = Math.max(0, Math.min(100, state.immune));
+            state.spread = Math.max(0, Math.min(100, state.spread));
+            state.hostHealth = Math.max(0, Math.min(100, state.hostHealth));
+
+            els.toxFill.style.width = `${state.immune}%`;
+            els.toxFill.style.background = 'var(--immune-color)';
+            els.toxFill.style.boxShadow = '0 0 10px var(--immune-color)';
+            els.toxText.innerText = `${Math.floor(state.immune)}/100`;
+
+            els.mutFill.style.width = `${state.spread}%`;
+            els.mutText.innerText = `${Math.floor(state.spread)}%`;
+
+            els.hhFill.style.width = `${state.hostHealth}%`;
+            els.hhText.innerText = `${Math.floor(state.hostHealth)}/100`;
+
+            els.btn1.disabled = state.atp < 15;
+            els.btn2.disabled = state.atp < 10;
+            els.btn3.disabled = state.atp < 20;
+            els.btn4.disabled = false; // Lay low is free
+
+            if (state.spread >= 100) {
+                els.btnUlt.style.display = 'block';
+            }
+        }
+
+        checkGameOver();
+    }
+
+    function gameTick() {
+        if (!state.isRunning) return;
+        state.time++;
+        
+        state.atp += atpRegenRate; 
+
+        if (state.stage === 1) {
+            state.tox += (1 * state.phase) * difficultyMultiplier; 
+            state.mut += 0.5;
+
+            if (state.time === 30 && state.phase === 1) {
+                state.phase = 2;
+                els.phaseText.innerText = "Phase 2: Steatohepatitis";
+                els.phaseText.style.color = "#ff6666";
+                addLog("⚠️ คำเตือน: เข้าสู่ภาวะตับอักเสบ! อัตราความเครียดพุ่งสูงขึ้น!", "warn");
+            } else if (state.time === 60 && state.phase === 2) {
+                state.phase = 3;
+                els.phaseText.innerText = "Phase 3: Cirrhosis & Warzone";
+                els.phaseText.style.color = "#ff3333";
+                els.visualPanel.style.background = "#3d2626";
+                addLog("🚨 วิกฤต: พังผืดลุกลามเต็มที่ (ตับแข็ง)! รีบหาทางหนี!", "bad");
+            }
+        } else if (state.stage === 2) {
+            // Stage 2 dynamics: more spread = immune reacts faster & host dies faster
+            state.immune += (state.spread / 20) * difficultyMultiplier;
+            state.hostHealth -= (state.spread / 25) * difficultyMultiplier;
+        }
+
+        updateUI();
+    }
+
+    function triggerRandomEvent() {
+        if (!state.isRunning) return;
+        let evt;
+
+        if (state.stage === 1) {
+            if (Math.random() < 0.10) {
+                evt = secretEvents[Math.floor(Math.random() * secretEvents.length)];
+            } else {
+                const phaseEvents = eventsStage1[state.phase];
+                evt = phaseEvents[Math.floor(Math.random() * phaseEvents.length)];
+            }
+            addLog(evt.msg, evt.type);
+
+            if (evt.tox) {
+                let damage = evt.tox * difficultyMultiplier;
+                if (state.shieldActive) {
+                    damage = Math.floor(damage * 0.2);
+                    addLog(`🛡️ เกราะป้องกันทำงาน! (รับจริง ${damage} Tox)`, "good");
+                }
+                state.tox += damage;
+            }
+            if (evt.atp) state.atp += evt.atp;
+            if (evt.mut) state.mut += evt.mut;
+        } else {
+            // Stage 2 Events
+            evt = eventsStage2[Math.floor(Math.random() * eventsStage2.length)];
+            addLog(evt.msg, evt.type);
+            
+            if (evt.immune) state.immune += (evt.immune * difficultyMultiplier);
+            if (evt.hostHealth) state.hostHealth += evt.hostHealth;
+            if (evt.spread) state.spread += evt.spread;
+        }
+
+        // Visual Shake
+        if (evt.type === 'bad' || evt.type === 'warn') {
+            els.cell.style.transform = "translate(10px, 10px)";
+            setTimeout(() => els.cell.style.transform = "", 100);
+        }
+        updateUI();
+    }
+
+    function checkGameOver() {
+        if (state.stage === 1) {
+            if (state.tox >= 100) {
+                state.isGameOver = true; state.isRunning = false;
+                clearInterval(tickInterval); clearInterval(eventInterval);
+                showModal("💀 APOPTOSIS!", "ความเครียดทะลุขีดจำกัด เยื่อหุ้มเซลล์พังทลาย<br>คุณตายไปพร้อมกับตับแข็งๆ ของโฮสต์...", "Restart Game", () => location.reload(), false);
+            }
+        } else if (state.stage === 2) {
+            if (state.hostHealth <= 0) {
+                state.isGameOver = true; state.isRunning = false;
+                clearInterval(tickInterval); clearInterval(eventInterval);
+                showModal("💀 HOST DECEASED!", "คุณดูดกลืนโฮสต์เร็วเกินไป!<br>โฮสต์เสียชีวิต... และเซลล์มะเร็งที่ไม่มีโฮสต์ก็อยู่ไม่ได้เช่นกัน", "Restart Game", () => location.reload(), false);
+            } else if (state.immune >= 100) {
+                state.isGameOver = true; state.isRunning = false;
+                clearInterval(tickInterval); clearInterval(eventInterval);
+                showModal("💉 ERADICATED!", "ระบบภูมิคุ้มกันทำลายคุณจนหมดสิ้น!<br>เซลล์มะเร็งถูกกำจัด โฮสต์รอดชีวิต (แต่คุณตาย!)", "Restart Game", () => location.reload(), false);
+            }
+        }
+    }
+
+    // --- ACTIONS: STAGE 1 ---
+    function action1() {
+        if (!state.isRunning) return;
+        if (state.stage === 1 && state.atp >= 15) { state.atp -= 15; state.tox -= 10; updateUI(); }
+        if (state.stage === 2 && state.atp >= 15) { state.atp -= 15; state.spread += 5; state.immune += 5; updateUI(); }
+    }
+    function action2() {
+        if (!state.isRunning) return;
+        if (state.stage === 1 && state.atp >= 20) { state.atp -= 20; state.tox -= 15; updateUI(); }
+        if (state.stage === 2 && state.atp >= 10) { state.atp -= 10; state.atp += 30; state.hostHealth -= 10; updateUI(); }
+    }
+    function action3() {
+        if (!state.isRunning) return;
+        if (state.stage === 1 && state.atp >= 30) { 
+            state.atp -= 30; state.shieldActive = true; els.cell.style.border = "5px solid #00e5ff";
+            addLog("ระบบเกราะทำงาน! (ลดความเสียหาย 80% เป็นเวลา 5 วิ)", "good"); updateUI(); 
+            setTimeout(() => { state.shieldActive = false; els.cell.style.border = "none"; }, 5000);
+        }
+        if (state.stage === 2 && state.atp >= 20) { state.atp -= 20; state.immune -= 15; updateUI(); }
+    }
+    function action4() {
+        if (!state.isRunning) return;
+        if (state.stage === 1 && state.atp >= 40) { state.atp -= 40; state.mut += 10; updateUI(); }
+        if (state.stage === 2) { 
+            // Lay Low (Symbiosis)
+            state.spread = Math.max(0, state.spread - 2); 
+            state.hostHealth += 10; 
+            state.immune -= 5; 
+            updateUI(); 
+        }
+    }
+
+    // --- ULTIMATE TRANSITIONS ---
+    function triggerUlt() {
+        if (!state.isRunning) return;
+        state.isGameOver = true; state.isRunning = false;
+        clearInterval(tickInterval); clearInterval(eventInterval);
+
+        if (state.stage === 1) {
+            showModal("🌌 METASTASIS SUCCESS!", "คุณเปิดสกิล EMT เปลี่ยนตัวเองให้เคลื่อนที่ได้สำเร็จ!<br>ทะลวงผ่านพังผืด ไหลเข้าสู่กระแสเลือด...<br><br><b>เป้าหมายต่อไป: ยึดครองทั้งร่าง!</b>", "Continue as Cancer", startStage2, true);
+        } else if (state.stage === 2) {
+            showModal("👑 IMMORTAL CELL LINE!", "คุณยึดครองร่างโฮสต์ได้ 100% และถูกนักวิจัยตัดชิ้นเนื้อไปเพาะเลี้ยงต่อในห้องแล็บ!<br><br><b>คุณกลายเป็นเซลล์อมตะ (เหมือนเซลล์ HeLa) ที่จะอยู่ไปตลอดกาล!</b><br><br><span style='font-size:0.85rem;color:#888;'>(โฮสต์จากไปอย่างสงบ แต่ตำนานของคุณเพิ่งเริ่มต้น)</span>", "Play Again", () => location.reload(), true);
+        }
+    }
+
+    // --- STAGE 2 INITIALIZATION ---
+    function startStage2() {
+        state.stage = 2;
+        state.atp = 100; state.hostHealth = 100; state.immune = 0; state.spread = 0;
+        state.time = 0;
+        els.alertModal.classList.add('hidden');
+        
+        // UI Adjustments
+        els.statHH.classList.remove('hidden');
+        els.lblTox.innerText = '🛡️ Immune Threat';
+        els.lblMut.innerText = '🦠 Cancer Spread (Win)';
+        
+        els.btn1.innerHTML = '🦠 Proliferate<br>(-15 ATP, +5% Spread, +Immune)';
+        els.btn2.innerHTML = '🩸 Angiogenesis<br>(-10 ATP, +30 Energy, -Host Health)';
+        els.btn3.innerHTML = '💉 Suppress Immune<br>(-20 ATP, -15 Immune)';
+        els.btn4.innerHTML = '🛌 Lay Low (Symbiosis)<br>(0 ATP, -2% Spread, +10 Host Health)';
+        
+        els.btnUlt.innerHTML = '🏆 [ULTIMATE] Ascend to Immortal Cell!';
+        els.btnUlt.style.display = 'none';
+
+        // Visuals
+        els.phaseText.innerText = "Stage 2: Malignant Tumor (Cancer)";
+        els.phaseText.style.color = "#ff00ff";
+        els.visualPanel.style.background = "#1a001a";
+        els.sageText.innerText = "«Notice. Evolution to [Malignant] successful.»";
+        
+        // Turn cell into cancer cell
+        els.cell.className = 'cell-entity cell-cancer';
+        els.cell.querySelector('.nucleus').className = 'nucleus nucleus-cancer';
+        els.flavorText.innerHTML = '"ข้าจะกลืนกินร่างนี้ให้หมด!"<br>Time as Cancer: <span id="timer">0</span>s';
+        els.timer = document.getElementById('timer'); // Re-bind since innerHTML destroyed it
+
+        addLog("SYSTEM: Metastasis complete. You are now a Parasitic Threat.", "good");
+        
+        // Restart Loop
+        state.isRunning = true; state.isGameOver = false;
+        updateUI();
+        tickInterval = setInterval(gameTick, 1000);
+        eventInterval = setInterval(triggerRandomEvent, 4000);
+    }
+
+    function startGame() {
+        els.tutorialModal.classList.add('hidden');
+        state.isRunning = true;
+        addLog("SYSTEM: ระบบตื่นขึ้น. คุณเกิดใหม่เป็นเซลล์ตับ.", "good");
+        updateUI();
+        tickInterval = setInterval(gameTick, 1000);
+        eventInterval = setInterval(triggerRandomEvent, 4000);
+    }
+
+    updateUI();
+
+</script>
+</body>
+</html>
